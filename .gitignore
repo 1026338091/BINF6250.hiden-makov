@@ -1,0 +1,11 @@
+*.code-workspace
+*.fq
+*.fq.gz
+*.gz
+*.fna
+*.faa
+*.fastq
+*.fasta
+*.txt
+__pycache__/
+*$py.class
