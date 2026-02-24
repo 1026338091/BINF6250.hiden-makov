@@ -5,19 +5,23 @@ def _nodes_to_path(nodes):
     # list of (k-1)-mers -> contig string
     return nodes[0] + "".join(n[-1] for n in nodes[1:])
 
+
+def search(currnode, graph_to_consume, path):
+    # recursive function to search up the next node and traverse to the next node after that
+    while graph_to_consume[currnode]:
+        # remove the node we're about to go to so we don't traverse that edge more than once
+        nextnode = graph_to_consume[currnode].pop()
+        search(nextnode)
+    path.append(currnode)
+
 def _eulerian_walk_recursive(graph_to_consume, startnode):
     # warning!!! recursion will fail on large contigs due to recursion limit.
     # just here for posterity
     path = []
-
-    def search(currnode):
-        while graph_to_consume[currnode]:
-            nextnode = graph_to_consume[currnode].pop()
-            search(nextnode)
-        path.append(currnode)
     
-    search(startnode)
+    search(startnode, graph_to_consume, path)
 
+    # reverse the list of nodes because the recursion made them add in reverse order
     path.reverse()
     return path
 
@@ -30,13 +34,74 @@ def _eulerian_walk(graph_to_consume, startnode):
     while stack:
         currnode = stack[-1]
         if graph_to_consume[currnode]:
+            # go to the next node along one of the edges
             nextnode = graph_to_consume[currnode].pop()
             stack.append(nextnode)
         else:
+            # if there are no edges to go to from the current node, start emptying the stack into the path
             path.append(stack.pop())
 
+    # reverse the list of nodes we've been to because they're added in reverse order (last-in, first-out)
     path.reverse()
     return path
+
+def _get_n50(contig_lengths: list[int]) -> int:
+    """
+    Take a list of contigs' lengths, sorted from greatest to least, and calculate the shortest contig for which
+    all contigs of that length or longer, when put together, represent 50% or more of the assembly
+
+    @param contig_lengths: list of ints representing the lengths of contigs, MUST be sorted from highest to lowest
+    @return: int, the n50 statistic
+    """
+    total_length = sum(contig_lengths)
+
+    # initialize a value to track the total length covered by the reads we're about to iterate over
+    dist = 0
+
+    for curr_length in contig_lengths:
+        # add the current contig's length to our sum
+        dist += curr_length
+        # check if our sum is >= half of the total length of the contigs
+        if dist >= total_length / 2:
+            # quit out because we've hit the shortest contig that meets our conditions
+            return curr_length
+            
+
+def get_assembly_stats(contigs: list[str]) -> dict[str, float]:
+    """
+    Take a list of contigs and calculate the following stats for the assembly:
+        Number of contigs
+        Total length: sum of all contigs' lengths
+        Longest, shortest, and mean contig lengths
+        N50: the shortest contig such that all contigs of that length or longer represent at least half the assembly length
+    
+    NOTE: this should be run AFTER the contigs are converted from lists of nodes to strings
+
+    @param contigs: list of strings
+    @return: dict mapping statistic names (strings) to their values (ints or floats)
+    """
+
+    num_contigs = len(contigs)
+
+    # make a list of the contigs' lengths and sort it from greatest to least
+    contig_lengths = [len(seq) for seq in contigs]
+    contig_lengths.sort(reverse=True)
+
+    total_length = sum(contig_lengths)
+    
+    longest_contig = max(total_length)
+    shortest_contig = min(total_length)
+    mean_length = total_length / num_contigs
+
+    n50 = _get_n50(contig_lengths)
+
+    return {"num_contigs": num_contigs,
+            "total_length": total_length,
+            "longest_contig": longest_contig,
+            "shortest_contig": shortest_contig,
+            "mean_length": mean_length,
+            "n50": n50}
+
 
 class DeBruijnGraph:
 
@@ -63,11 +128,11 @@ class DeBruijnGraph:
 
             if len(read) < self.k:
                 ignored_short += 1
-                continue # escapes reads loop
+                continue # escapes read's loop, ignoring it because it's too short
 
             if self.ignore_ambiguous and any(b not in "ACGT" for b in read):
                 ignored_amb += 1
-                continue # escapes reads loop
+                continue # escapes read's loop, ignoring it because there are ambiguous nucleotides in the read
 
             for i in range(len(read) - self.k + 1):
                 # loops through kmers of read
@@ -76,21 +141,23 @@ class DeBruijnGraph:
                 prefix = kmer[:-1]
                 suffix = kmer[1:]
 
+                # add an entry into the graph indicating that the current suffix's node  is connected to the current prefix's node via an edge
                 self.graph[prefix].append(suffix)
 
-                self.balance[prefix] += 1
-                self.balance[suffix] -= 1
+                self.balance[prefix] += 1 # indicates another edge leaves this prefix's node
+                self.balance[suffix] -= 1 # indicates another edge enters this prefix's node
 
                 kmers_added += 1
 
+        # make a list of nodes (k-1mers) for which they have more edges entering them than leaving
         self.startnodes = [n for (n, b) in self.balance.items() if b > 0]
 
         edges = sum(len(adj) for adj in self.graph.values())
         nodes = len(set(self.balance.keys()) | set(self.graph.keys()))
-        bal_pos = sum(1 for b in self.balance.values() if b > 0)
-        bal_neg = sum(1 for b in self.balance.values() if b < 0)
-        bal_zero = sum(1 for b in self.balance.values() if b == 0)
-        bal_abs_gt1 = sum(1 for b in self.balance.values() if abs(b) > 1)
+        bal_pos = sum(1 for b in self.balance.values() if b > 0) # number of nodes with more edges going out than coming in
+        bal_neg = sum(1 for b in self.balance.values() if b < 0) # number of nodes with more edges coming in than going out
+        bal_zero = sum(1 for b in self.balance.values() if b == 0) # number of balanced nodes
+        bal_abs_gt1 = sum(1 for b in self.balance.values() if abs(b) > 1) # number of nodes unbalanced by more than 1 edge
 
         self.stats = {
             "reads_total": reads_total,
@@ -131,6 +198,7 @@ class DeBruijnGraph:
 
         rng = random.Random(seed) # local rng
 
+        # make a deep copy of the graph so we can remove elements for our walk without editing the original graph object
         working_graph = defaultdict(list, {currentnode:nextnodes_list.copy() for currentnode, nextnodes_list in self.graph.items()})
 
         for currentnode in working_graph:
@@ -193,6 +261,7 @@ class DeBruijnGraph:
         contigs = []
 
         for i, path_nodes in enumerate(self.contig_lists, start=1):
+            # convert the path from a list of nodes to the actual sequence it represents
             seq = _nodes_to_path(path_nodes)
             contigs.append((i, seq))
 

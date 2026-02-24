@@ -146,14 +146,14 @@ longest_contig: report the max from the list of contig lengths
 shortest_contig: report the min from the list of contig lengths
 mean_length: sum the values in the contig length list, divide by the length of the list
 
-n50: N50 statistic (the lowest possible number of contigs we need to cover half of the total length of all the contigs put together)
+n50: N50 statistic (the shortest contig such that all contigs of at least that length cover half of the total length of all the contigs put together)
 Make this a helper function that takes the contigs length list as an input:
     Start a value, n, at 0
     Sort the lengths list from largest value to smallest
-    Iterate over the values in the newly-sorted lengths list (use enumerate for this because we care about the index)
+    Iterate over the values in the newly-sorted lengths list
         Add the current value to n
         Check if n is greater than or equal to half of the total length (total length calculated above)
-            If yes, return the index + 1
+            If yes, return the length of the read
             If no, continue
 
 Bundle all of these values we need to report into a tuple and report it
