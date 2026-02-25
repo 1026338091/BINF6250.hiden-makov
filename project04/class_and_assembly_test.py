@@ -273,6 +273,8 @@ class DeBruijnGraph:
                 f.write(f">contig_{idx:06d} len={len(seq)} k={self.k}\n")
                 for i in range(0, len(seq), wrap):
                     f.write(seq[i:i+wrap] + "\n")
+        
+        print("[write] done")
 
 # toy_reads_1 = [
 #     "ATGGCGTACG",  # Read 1
@@ -318,13 +320,17 @@ import gzip
 def iter_fastq_seqs_gz(path):
     with gzip.open(path, "rt", encoding="utf-8", newline="") as fh:
         i=0
+         
         while True:
             i +=1
             header = fh.readline()
+        
             if not header:
                 return  # EOF
-            if i > 100000000:
-                return 
+            # if i > 100000000:
+            #     return 
+
+            print(f'\r[build] progress: {i} reads', end='', flush=True)
 
             seq = fh.readline()
             plus = fh.readline()
