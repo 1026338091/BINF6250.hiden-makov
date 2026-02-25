@@ -287,7 +287,6 @@ class DeBruijnGraph:
 
         return contigs
 
-
     def write_fasta(self, out_path, sort_by_len=True, wrap=60):
 
         if self.contig_lists is None:
@@ -346,7 +345,7 @@ def iter_fastq_seqs_gz(path):
             yield seq.strip()
 
 reads_iter = iter_fastq_seqs_gz("raw.fq.gz")
-dbg = DeBruijnGraph(reads_iter, k=149, ignore_ambiguous=True, verbose=True)
+dbg = DeBruijnGraph(reads_iter, k=150, ignore_ambiguous=True, verbose=True)
 dbg.assemble_contigs(seed=123, verbose=True)
 stats = get_assembly_stats_from_node_paths(dbg.contig_lists, dbg.k)
 print(stats)
