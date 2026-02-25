@@ -243,3 +243,27 @@ class DeBruijnGraph:
 # amb = DeBruijnGraph(ambiguous_and_too_short, 5) 
 # amb.assemble_contigs(seed=123)
 # amb.write_fasta("test")
+
+import gzip
+
+def iter_fastq_seqs_gz(path):
+    with gzip.open(path, "rt", encoding="utf-8", newline="") as fh:
+        i=0
+        while True:
+            i +=1
+            header = fh.readline()
+            if not header:
+                return  # EOF
+            if i > 100000000:
+                return 
+
+            seq = fh.readline()
+            plus = fh.readline()
+            qual = fh.readline()
+
+            yield seq.strip()
+
+reads_iter = iter_fastq_seqs_gz("raw.fq.gz")
+dbg = DeBruijnGraph(reads_iter, k=149, ignore_ambiguous=True, verbose=True)
+dbg.assemble_contigs(seed=123, verbose=True)
+dbg.write_fasta("contigs.fasta")
