@@ -2,9 +2,36 @@
 
 ## Description of the project
 
-This repository contains work done as part of the BINF6250 Algorithmic Foundations in Bioinformatics course (Northeastern University, Spring 2026). The goal is to implement a de Bruijn graph algorithm for genome assembly.
+This repository contains work completed for BINF6250 – Algorithmic Foundations in Bioinformatics (Northeastern University, Spring 2026).
+
+The goal of this project is to implement a De Bruijn graph–based genome assembly algorithm from scratch in Python. The project reconstructs DNA contigs from short sequencing reads by:
+
+Constructing a directed De Bruijn graph from k-mers
+
+Tracking in-degree and out-degree of nodes
+
+Identifying valid Eulerian path start positions
+
+Performing recursive Eulerian traversal
+
+Assembling contigs from graph walks
+
+Calculating standard assembly statistics (including N50)
+
+This implementation emphasizes algorithmic clarity, correctness, and reproducibility.
 
 ## Dependencies
+Python 3.9+
+
+Standard Python libraries only:
+
+    collections
+
+    random
+
+    time
+
+    datetime
 
 ## Contents
 
@@ -178,12 +205,19 @@ Step 2: iterate over the contigs (use enumerate so we access the index and the c
 ### Successes
 
 ### Strugges
+Understanding why Eulerian paths must append nodes in reverse order.
+
+Debugging recursive traversal and ensuring edges were removed correctly.
+
+Managing graph copies to avoid modifying the original structure.
+
+Handling performance challenges with large datasets.
 
 ### Individual reflections
 
 Justin Wildman:
 
-Tien Nguyen:
+Tien Nguyen: From this assignment, I learned how the De Bruijn graph algorithm and Eulerian walk are applied in genome assembly and how theoretical concepts are translated into practical code. I was able to successfully implement and test the algorithm using toy examples, which helped me understand how k-mers, nodes, and edges interact within the graph. However, I found it challenging to scale the script to run efficiently on real sequencing data due to memory and performance limitations, which required me to think more carefully about optimization strategies such as using iterators and reducing unnecessary data storage. Working with Linh and Justin was a positive experience, as we collaborated closely to develop the pseudocode during our first meeting and supported each other throughout debugging and testing. This project strengthened my problem-solving skills, improved my understanding of recursive algorithms, and increased my confidence in working with large biological datasets.
 
 Linh Nguyen (group leader):
 
