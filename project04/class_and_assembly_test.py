@@ -102,6 +102,38 @@ def get_assembly_stats(contigs: list[str]) -> dict[str, float]:
             "mean_length": mean_length,
             "n50": n50}
 
+def get_assembly_stats_from_node_paths(contigs, k):
+    num_contigs = len(contigs)
+    
+    if num_contigs == 0:
+        return {
+            "num_contigs": 0,
+            "total_length": 0,
+            "longest_contig": 0,
+            "shortest_contig": 0,
+            "mean_length": 0.0,
+            "n50": 0,
+        }
+
+    contig_lengths = [(len(p) + k - 2) for p in contigs]
+    contig_lengths.sort(reverse=True)
+
+    total_length = sum(contig_lengths)
+    longest_contig = contig_lengths[0]
+    shortest_contig = contig_lengths[-1]
+    mean_length = total_length / num_contigs
+
+    n50 = _get_n50(contig_lengths)
+
+    return {
+        "num_contigs": num_contigs,
+        "total_length": total_length,
+        "longest_contig": longest_contig,
+        "shortest_contig": shortest_contig,
+        "mean_length": mean_length,
+        "n50": n50,
+    }
+
 
 class DeBruijnGraph:
 
@@ -251,8 +283,10 @@ class DeBruijnGraph:
         if verbose:
             print(f"[assembly] seed = {seed}; contigs = {self.stats['contigs']}")
             print(f"[assembly] leftover edges = {leftover_edges}")
+            print()
 
         return contigs
+
 
     def write_fasta(self, out_path, sort_by_len=True, wrap=60):
 
@@ -276,44 +310,17 @@ class DeBruijnGraph:
         
         print("[write] done")
 
-# toy_reads_1 = [
-#     "ATGGCGTACG",  # Read 1
-#     "GGCGTACGTT",  # Read 2: overlaps with Read 1
-#     "CGTACGTTAC",  # Read 3: overlaps with Read 2
-#     "TACGTTACCA",  # Read 4: overlaps with Read 3
-#     "CGTTACCATG",  # Read 5: overlaps with Read 4
-#     "TTACCATGGG",  # Read 6: overlaps with Read 5
-#     "ACCATGGGCC",  # Read 7: overlaps with Read 6
-#     "CATGGGCCTA",  # Read 8: overlaps with Read 7
-#     "TGGGCCTAAA"   # Read 9: overlaps with Read 8
-# ]
-
-# toy_k5_a = DeBruijnGraph(toy_reads_1, 5) 
-# toy_k5_a.assemble_contigs(seed=123)
-# toy_k5_a.write_fasta("test_k5_a")
-
-# toy_k5_b = DeBruijnGraph(toy_reads_1, 5) 
-# toy_k5_b.assemble_contigs(seed=321)
-# toy_k5_b.write_fasta("test_k5_b")
-
-# toy_k5_c = DeBruijnGraph(toy_reads_1, 5)  
-# toy_k5_c.assemble_contigs(seed=12243435435345465345) # another seed that does the same thing as a
-# toy_k5_c.write_fasta("test_k5_c")
-
-# print(toy_k5_a.contig_lists == toy_k5_b.contig_lists) # False
-# print(toy_k5_a.contig_lists == toy_k5_c.contig_lists) # True
-
-# ambiguous_and_too_short = [
-#     "ATGNCGTACG",
-#     "GGCGTACRTT",
-#     "CGTACGTTAC",
-#     "TACGTTACCA",
-#     "ATCG"
-# ]
-
-# amb = DeBruijnGraph(ambiguous_and_too_short, 5) 
-# amb.assemble_contigs(seed=123)
-# amb.write_fasta("test")
+toy_reads_1 = [
+    "ATGGCGTACG",  # Read 1
+    "GGCGTACGTT",  # Read 2: overlaps with Read 1
+    "CGTACGTTAC",  # Read 3: overlaps with Read 2
+    "TACGTTACCA",  # Read 4: overlaps with Read 3
+    "CGTTACCATG",  # Read 5: overlaps with Read 4
+    "TTACCATGGG",  # Read 6: overlaps with Read 5
+    "ACCATGGGCC",  # Read 7: overlaps with Read 6
+    "CATGGGCCTA",  # Read 8: overlaps with Read 7
+    "TGGGCCTAAA"   # Read 9: overlaps with Read 8
+]
 
 import gzip
 
@@ -341,4 +348,6 @@ def iter_fastq_seqs_gz(path):
 reads_iter = iter_fastq_seqs_gz("raw.fq.gz")
 dbg = DeBruijnGraph(reads_iter, k=149, ignore_ambiguous=True, verbose=True)
 dbg.assemble_contigs(seed=123, verbose=True)
-dbg.write_fasta("contigs.fasta")
+stats = get_assembly_stats_from_node_paths(dbg.contig_lists, dbg.k)
+print(stats)
+dbg.write_fasta("test.fasta")
