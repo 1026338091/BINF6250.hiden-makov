@@ -99,7 +99,7 @@ class DeBruijnGraph:
         for read in reads:
             read = read.strip().upper()
             reads_total += 1
-            bases_total += 0
+            bases_total += 1
             avg_read_length = (bases_total + len(read))/reads_total
 
             if len(read) < self.k:
@@ -406,7 +406,7 @@ def write_statistics_file(
         f.write(f"Average read length:     {avg_read_length:.1f} bp\n")
         f.write(f"Total sequencing data:   {num_reads * avg_read_length:,.0f} bp\n")
         f.write(f"Estimated coverage:      {coverage_estimate:.1f}x\n")
-        f.write(f"Read time:               {timing['read_time']:.2f} seconds\n\n")
+        #f.write(f"Read time:               {timing['read_time']:.2f} seconds\n\n")
         
         f.write("-"*80 + "\n")
         f.write("DE BRUIJN GRAPH CONSTRUCTION\n")
@@ -454,8 +454,8 @@ def write_statistics_file(
         f.write("TIMING SUMMARY\n")
         f.write("-"*80 + "\n")
         total_time = timing['total_time']
-        f.write(f"Read time:               {timing['read_time']:8.2f} seconds "
-                f"({timing['read_time']/total_time*100:5.1f}%)\n")
+        #f.write(f"Read time:               {timing['read_time']:8.2f} seconds "
+        #        f"({timing['read_time']/total_time*100:5.1f}%)\n")
         f.write(f"Graph construction:      {timing['graph_time']:8.2f} seconds "
                 f"({timing['graph_time']/total_time*100:5.1f}%)\n")
         f.write(f"Assembly:                {timing['assembly_time']:8.2f} seconds "
@@ -499,9 +499,8 @@ def assemble_mouse_genome(
     
     timing = {}
     timing["read_time"] = 0.0 # iterator
-    
-    start_time = time.time()
-    
+    t0 = time.time()
+
     print(f"Time elapsed: {timing['read_time']:.2f} seconds")
     
     print("STEP 1: Building De Bruijn graph")
@@ -509,14 +508,13 @@ def assemble_mouse_genome(
     print(f"K-mer size: {k_mer_size}")
     print()
     
-    start_time = time.time()
     reads_iter = iter_fastq_seqs_gz(input_file)
     dbg = DeBruijnGraph(reads_iter, k=k_mer_size)
+    timing["graph_time"] = time.time() - t0
 
     num_reads = dbg.stats["reads_total"]
     total_bases = dbg.stats["bases_total"]
     avg_read_length = dbg.stats["avg_read_length"]
-    timing['graph_time'] = time.time() - start_time
     
     # Calculate graph statistics
     num_nodes = dbg.stats["nodes"]
@@ -539,9 +537,9 @@ def assemble_mouse_genome(
     print(f"Random seed: {random_seed} (for reproducibility)")
     print()
     
-    start_time = time.time()
+    t0 = time.time()
     contigs = dbg.assemble_contigs(seed=random_seed)
-    timing['assembly_time'] = time.time() - start_time
+    timing["assembly_time"] = time.time() - t0
     
     print(f"Assembly complete!")
     print(f"  Contigs generated: {dbg.stats['num_contigs'],}")
@@ -591,7 +589,7 @@ def assemble_mouse_genome(
     dbg.write_fasta(output_fasta)
     print(f"✓ Contigs written to: {output_fasta}")
     
-    timing['total_time'] = time.time() - start_time
+    timing["total_time"] = timing["graph_time"] + timing["assembly_time"]
 
     # Write detailed statistics
     write_statistics_file(
