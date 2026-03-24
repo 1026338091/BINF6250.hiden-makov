@@ -22,10 +22,4 @@ This repository contains work done as part of the BINF6250 Algorithmic Foundatio
 
 ### Individual reflections
 
-Justin Wildman:
-
-Tien Nguyen:
-
-Linh Nguyen (group leader):
-
 ## Appendix
