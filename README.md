@@ -1,2 +1,31 @@
-# BINF6250
-Repository for BINF6250 (Algorithmic Foundations in Bioinformatics) projects for which I am group leader.
+# BINF6250 Project ?: Hidden Markov Models
+
+## Description of the project
+
+This repository contains work done as part of the BINF6250 Algorithmic Foundations in Bioinformatics course (Northeastern University, Spring 2026). 
+
+## Dependencies
+
+## Contents
+
+## Usage
+
+## Pseudocode
+
+```
+```
+
+## Personal reflections
+### Successes
+
+### Strugges
+
+### Individual reflections
+
+Justin Wildman:
+
+Tien Nguyen:
+
+Linh Nguyen (group leader):
+
+## Appendix
