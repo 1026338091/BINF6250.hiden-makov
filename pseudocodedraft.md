@@ -5,9 +5,9 @@ represents one named set of mutually exclusive possible observed values.
 
 ### attributes:
 - set_name: optional but recommended identifier for the emission set. if used, should be unique within an `HMM`.
-- length: number of emission values in the set. always equal to the number of value names.
+- length: number of emission values in the set. always equal to the number of value weights.
 - value_names: list[str] of strings naming the emission values in this set.
-- default_weights: list[float] of of numeric weights, one per emission value. used as fallback weights when a hidden state does not yet have a specific weight vector for this emission set.
+- default_weights: list[float] of of numeric weights, one per range length. used as fallback weights when a hidden state does not yet have a specific weight vector for this emission set.
 
 ### methods:
 - `initialize(name: str | None = None, length: int, value_names: list[str] | None = None, default_weights: list[float] | None = None)`: 
