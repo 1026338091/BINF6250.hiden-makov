@@ -2,7 +2,7 @@
 
 # import statements
 
-# commence with the funny
+
 class Emission_Set:
     """
     Represents one named set of mutually exclusive possible observed values
