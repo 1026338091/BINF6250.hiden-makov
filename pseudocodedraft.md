@@ -143,7 +143,7 @@ the model’s emission schema is defined by `emission_sets`, and all hidden stat
 
 ------
 
-# viterbi
+# viterbi(emission, HMModel)
 
 ```
 n = len(emissions)
@@ -236,3 +236,36 @@ for i in emission[n] to emmission[0]:
 	reversed_path.append(where_from)
 
 ```
+
+# train
+
+start with: text files
+
+x=
+seq_bases
+seq_methylation
+
+y=
+seq_hidden_states
+
+parse
+
+make them into lists
+
+for all positions:
+- prev "state" depends on order
+- current state is current in seq_hidden_states <- either this or do only first order and use products
+- you have to do the beta thing
+
+index using "current base" position
+
+goal:
+- transition weights -> dict{prev:{current:weight}}
+- emission weights -> dict{state:{emission:weight}}
+- initial weights -> dict{state:weight}
+
+update/output:
+- list of EmissionSet objects (identities)
+- list of HiddenState objects with preloaded emission weights and initial weights
+- transition weight dict to load columns/rows one at a time into W_hh HMModel
+
