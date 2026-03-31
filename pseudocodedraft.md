@@ -5,9 +5,9 @@ represents one named set of mutually exclusive possible observed values.
 
 ### attributes:
 - set_name: optional but recommended identifier for the emission set. if used, should be unique within an `HMM`.
-- length: number of emission values in the set. always equal to the number of value names.
+- length: number of emission values in the set. always equal to the number of value weights.
 - value_names: list[str] of strings naming the emission values in this set.
-- default_weights: list[float] of of numeric weights, one per emission value. used as fallback weights when a hidden state does not yet have a specific weight vector for this emission set.
+- default_weights: list[float] of of numeric weights, one per range length. used as fallback weights when a hidden state does not yet have a specific weight vector for this emission set.
 
 ### methods:
 - `initialize(name: str | None = None, length: int, value_names: list[str] | None = None, default_weights: list[float] | None = None)`: 
@@ -65,18 +65,18 @@ represents one hidden state in the HMM, including its init weight and its state-
 #### model building methods
 
 `initialize(emission_sets: list[emission_set] | None = None, hidden_states: list[hidden_state] | None = None)`:
-	- start with empty `emission_sets`, `hidden_states`, and `W_hh`
-	- add provided emission sets
-	- add provided hidden states
-	- size `W_hh` to match the number of hidden states; set transition weights to `0`
+- start with empty `emission_sets`, `hidden_states`, and `W_hh`
+- add provided emission sets
+- add provided hidden states
+- size `W_hh` to match the number of hidden states; set transition weights to `0`
 
 
 `add_emission_set(new_emission_set, fill_hidden_states_with="zeros" or "default")`:
-	- require the emission set name to be new within the model
-	- append the emission set to `emission_sets`
-	- for each existing hidden state that lacks this emission set:
-	    - add a weight vector of zeros, or
-	    - add the emission set’s `default_weights`
+- require the emission set name to be new within the model
+- append the emission set to `emission_sets`
+- for each existing hidden state that lacks this emission set:
+	- add a weight vector of zeros, or
+	- add the emission set’s `default_weights`
 
 `add_hidden_state()` :
 - arguments:
@@ -117,16 +117,16 @@ represents one hidden state in the HMM, including its init weight and its state-
 	- leave unspecified transitions at 0 (or whatever)
 
 `fill_missing_state_emissions(hidden_state_ref, method="zeros")`: 
-	- for any emission set present in the model but missing from the state, insert a matching weight vector. 
-	- used mainly during forced add_hidden_state
+- for any emission set present in the model but missing from the state, insert a matching weight vector. 
+- used mainly during forced add_hidden_state
 
 other methods:
-	- replace hidden state by ref
-	- replace transition weight by ref x ref
-	- replace transition row for one "prev state" by ref
-	- replace transition column for one "current state" by ref
-	- replace init weight by ref
-	- ...
+- replace hidden state by ref
+- replace transition weight by ref x ref
+- replace transition row for one "prev state" by ref
+- replace transition column for one "current state" by ref
+- replace init weight by ref
+- ...
 
 #### explicitly describing a design choice
 the model’s emission schema is defined by `emission_sets`, and all hidden states must conform to it. strict mode requires exact agreement. force mode fills missing emission weights; so it allows for adding models which LACK weights for certain emission sets already in the schema. extra emission sets are always rejected unless added to the model first via `add_emission_set`.
