@@ -137,3 +137,11 @@ def viterbi(emissions: list, model: HMModel) -> list[str]:
     path.reverse()
     
     return [states[s] for s in path]
+
+
+## test ##
+from fakedata_for_HMModel import emissions, model
+
+path = viterbi(emissions, model)
+
+print(path)

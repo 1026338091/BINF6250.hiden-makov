@@ -3,7 +3,8 @@
 
 # import statements
 import numpy as np
-from ..classdefs_linh import EmissionSet, HiddenState, HMModel
+from ..EmissionSet_and_HiddenState_defs_linh import EmissionSet, HiddenStates
+from ..HMModel_def import HMModel
 
 
 def identify_emissionset(emission_seq: list[str], model: HMModel, verbose: bool = False) -> EmissionSet | None:
@@ -52,7 +53,7 @@ def identify_emissionset(emission_seq: list[str], model: HMModel, verbose: bool 
     return None
 
 
-def lookup_emission_prob(model, emission_set)
+#def lookup_emission_prob(model, emission_set)
 
 
 def Viterbi(emission_seq: list[str], model: HMModel) -> list[str]:

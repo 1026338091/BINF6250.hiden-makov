@@ -413,7 +413,7 @@ class HMModel:
             raise Exception("W_hh must have one row per hidden state")
         for row in self.W_hh:
             if len(row) != len(self.hidden_states):
-                raise EXception("each W_hh row must have one column per hidden state")
+                raise Exception("each W_hh row must have one column per hidden state")
 
         # etc etc
         return
