@@ -1,8 +1,8 @@
 # toy data for first order HMM implementation (downstream from class defs)
 # usable on anything that assumes HMModel class
 
-from EmissionSet_and_HiddenState_defs_linh import EmissionSet, HiddenState
-from HMModel_def import HMModel
+from core.EmissionSet_and_HiddenState_defs import EmissionSet, HiddenState
+from core.HMModel_def import HMModel
 
 # emission sets
 dna_base = EmissionSet(

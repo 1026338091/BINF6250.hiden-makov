@@ -3,7 +3,7 @@ import numpy as np
 
 ###### WIP ###############################
 
-from nthHMModel_def import nthHMModel
+from .nthHMModel_def import nthHMModel
 
 def nthviterbi(emissions: list, model: nthHMModel) -> list[str]:
     

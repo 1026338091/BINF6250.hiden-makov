@@ -1,4 +1,4 @@
-from HMModel_def import HMModel
+from core.HMModel_def import HMModel
 import math
 
 # safe log probability helper
@@ -140,7 +140,7 @@ def viterbi(emissions: list, model: HMModel) -> list[str]:
 
 
 ## test ##
-from fakedata_for_HMModel import emissions, model
+from .fakedata_for_HMModel import emissions, model
 
 path = viterbi(emissions, model)
 

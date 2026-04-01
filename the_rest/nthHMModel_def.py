@@ -1,4 +1,4 @@
-from EmissionSet_and_HiddenState_defs_linh import EmissionSet, HiddenState
+from core.EmissionSet_and_HiddenState_defs import EmissionSet, HiddenState
 import numpy as np
 from typing import Optional
 
@@ -422,7 +422,7 @@ class nthHMModel:
         self.P_eh = self.build_P_eh()
 
     ##### VALIDATION #####
-
+    
     def validate_model(self) -> None:
         
         # emission sets

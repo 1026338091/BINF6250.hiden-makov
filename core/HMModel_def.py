@@ -1,9 +1,8 @@
 from typing import Optional
 
-from EmissionSet_and_HiddenState_defs_linh import EmissionSet, HiddenState
-class HMModel:
+from .EmissionSet_and_HiddenState_defs import EmissionSet, HiddenState
 
-    ##### CLASS BASICS #####
+class HMModel:
 
     def __init__(
         self,
@@ -11,10 +10,17 @@ class HMModel:
         hidden_states: Optional[list[HiddenState]] = None
         ) -> None:
 
+        emission_sets = [] if emission_sets is None else emission_sets
+        hidden_states = [] if hidden_states is None else hidden_states
+
         # always updated
         self.emission_sets = []                                 # all legal EmissionSets
         self.hidden_states = []                                 # all HiddenStates
         self.W_hh = []                                          # transition probability matrix (HiddenState -> HiddenState)
+
+        # cached lookup objects
+        self.es_lookup = {}
+        self.hs_lookup = {}
 
         # not computed until prompted
         self.W_eh = None
@@ -36,7 +42,6 @@ class HMModel:
             )
 
     def copy(self) -> "HMModel":
-        
         new_model = HMModel(
             emission_sets=[es.copy() for es in self.emission_sets],
             hidden_states=[hs.copy() for hs in self.hidden_states]
@@ -73,7 +78,16 @@ class HMModel:
 
         return new_model
 
-    ##### INTERNAL CONVENIENCES #####
+    def rebuild_lookup_objects(self) -> None:
+        # rebuild cached name to index lookup dictionaries to avoid repeated scanning
+        self.es_lookup = {
+            emission_set.set_name: i
+            for i, emission_set in enumerate(self.emission_sets)
+        }
+        self.hs_lookup = {
+            hidden_state.hidden_state_name: i
+            for i, hidden_state in enumerate(self.hidden_states)
+        }
 
     def es_ref(self, es_ref: int | str) -> int:
         # normalizes references to an emission set in this model
@@ -83,9 +97,8 @@ class HMModel:
             return es_ref
 
         # ref is str name
-        for i, emission_set in enumerate(self.emission_sets):
-            if emission_set.set_name == es_ref:
-                return i
+        if es_ref in self.es_lookup:
+            return self.es_lookup[es_ref]
         
         # invalid provided ref
         raise Exception(f"emission set {es_ref} not found")
@@ -98,9 +111,8 @@ class HMModel:
             return hs_ref
 
         # ref is str name
-        for i, hidden_state in enumerate(self.hidden_states):
-            if hidden_state.hidden_state_name == hs_ref:
-                return i
+        if hs_ref in self.hs_lookup:
+            return self.hs_lookup[hs_ref]
 
         raise KeyError(f"hidden state {hs_ref} not found")
 
@@ -121,15 +133,13 @@ class HMModel:
 
     def check_novel_es_name(self, name: str | None) -> None:
         # is this ES name already taken?
-        for emission_set in self.emission_sets:
-            if emission_set.set_name == name:
-                raise Exception(f"duplicate emission set name: {name}")
+        if name in self.es_lookup:
+            raise Exception(f"duplicate emission set name: {name}")
 
     def check_novel_hs_name(self, name: str | None) -> None:
         # is this HS name already taken?
-        for hidden_state in self.hidden_states:
-            if hidden_state.hidden_state_name == name:
-                raise Exception(f"duplicate hidden state name: {name}")
+        if name in self.hs_lookup:
+            raise Exception(f"duplicate hidden state name: {name}")
 
     def validate_hs_against_schema(self, hidden_state: HiddenState) -> None:
         # require agreement with model emission schema
@@ -146,13 +156,43 @@ class HMModel:
             if len(hidden_state.emission_weights[set_name]) != emission_set.length:
                 raise Exception(f"weight vector for emission set {set_name} must have length {emission_set.length}")
 
-    ##### METHODS FOR MODIFYING THE MODEL#####
+    def force_fill_hs_emissions(self, hidden_state: HiddenState, missing_fill: str = "zeros") -> None:
+        # fill missing emission sets in a hidden state while rejecting unknown ones
+
+        model_set_names = {es.set_name for es in self.emission_sets}
+        state_set_names = set(hidden_state.emission_weights.keys())
+
+        extras = state_set_names - model_set_names
+        if extras:
+            raise Exception(f"hidden state contains unknown emission sets: {extras}")
+
+        for emission_set in self.emission_sets:
+            if emission_set.set_name not in hidden_state.emission_weights:
+                if missing_fill == "zeros":
+                    hidden_state.emission_weights[emission_set.set_name] = [0.0] * emission_set.length
+                else:
+                    hidden_state.emission_weights[emission_set.set_name] = [float(w) for w in emission_set.default_weights]
+
+    def enlarge_transition_matrix(self) -> int:
+        # enlarge W_hh by one row and one column, returning old size
+
+        old_n = len(self.hidden_states) - 1
+
+        # add new column (= lengthen each row)
+        for row in self.W_hh:
+            row.append(0.0)
+
+        # add new row
+        self.W_hh.append([0.0] * (old_n + 1))
+
+        return old_n
 
     def add_emission_set(self, new_emission_set: EmissionSet, fill_hidden_states_with: str = "zeros") -> None:
 
         # add an emission set to the model schema
         self.check_novel_es_name(new_emission_set.set_name)
         self.emission_sets.append(new_emission_set)
+        self.rebuild_lookup_objects()
 
         for hidden_state in self.hidden_states:
             # give hidden states with no wegihts for this emission set some default values
@@ -160,7 +200,7 @@ class HMModel:
                 if fill_hidden_states_with == "zeros":
                     hidden_state.emission_weights[new_emission_set.set_name] = [0.0] * new_emission_set.length
                 else:
-                    hidden_state.emission_weights[new_emission_set.set_name] = list(new_emission_set.default_weights)
+                    hidden_state.emission_weights[new_emission_set.set_name] = [float(w) for w in new_emission_set.default_weights]
 
         # this changes everything so clear derived
         self.clear_derived()
@@ -192,41 +232,20 @@ class HMModel:
         if mode == "force":
 
             #### 1. no emission sets can be forced into the model through this route ####
-            # retrieve es names of the model
-            model_set_names = {es.set_name for es in self.emission_sets}
-
-            # retrieve es names of the new hs
-            state_set_names = set(new_hidden_state.emission_weights.keys())
-
-            extras = state_set_names - model_set_names
-            if (state_set_names - model_set_names):
-                raise Exception(f"hidden state contains unknown emission sets: {extras}")
-
             #### 2. however, if the new HS is LACKING emission sets, add the sets to the HS ####
-            for emission_set in self.emission_sets:
-                if emission_set.set_name not in new_hidden_state.emission_weights:
-                    if missing_fill == "zeros":
-                        new_hidden_state.emission_weights[emission_set.set_name] = [0.0] * emission_set.length
-                    else:
-                        new_hidden_state.emission_weights[emission_set.set_name] = list(emission_set.default_weights)
+            self.force_fill_hs_emissions(new_hidden_state, missing_fill=missing_fill)
 
             #### 3. check if forcing was done correctly
             self.validate_hs_against_schema(new_hidden_state)
 
         # option to specify init weight for this hs in this model
         if update_init_weight is not None:
-            new_hidden_state.init_weight = update_init_weight
-
+            new_hidden_state.init_weight = float(update_init_weight)
 
         #### MATRIX ENLARGEMENT PROCEDURE ####
-        old_n = len(self.hidden_states)
         self.hidden_states.append(new_hidden_state)
-
-        # add new column (= lengthen each row)
-        for row in self.W_hh:
-            row.append(0.0)
-        # add new row
-        self.W_hh.append([0.0] * (old_n + 1))
+        self.rebuild_lookup_objects()
+        old_n = self.enlarge_transition_matrix()
 
         # set incoming transition weights
         if incoming_transition_weights is not None:
@@ -235,7 +254,7 @@ class HMModel:
                 if len(incoming_transition_weights) != old_n:
                     raise Exception("incoming_transition_weights list must have length equal to current number of old states")
                 for i, weight in enumerate(incoming_transition_weights):
-                    self.W_hh[i][old_n] = weight
+                    self.W_hh[i][old_n] = float(weight)
 
             # if a dict was used we have to match hidden state names
             elif isinstance(incoming_transition_weights, dict):
@@ -243,7 +262,7 @@ class HMModel:
                     i = self.hs_ref(state_ref)
                     if i == old_n:
                         continue
-                    self.W_hh[i][old_n] = weight
+                    self.W_hh[i][old_n] = float(weight)
 
         # set outgoing transition weights, same idea
         if outgoing_transition_weights is not None:
@@ -251,17 +270,17 @@ class HMModel:
                 if len(outgoing_transition_weights) != old_n:
                     raise Exception("outgoing_transition_weights list must have length equal to current number of old states")
                 for j, weight in enumerate(outgoing_transition_weights):
-                    self.W_hh[old_n][j] = weight
+                    self.W_hh[old_n][j] = float(weight)
 
             elif isinstance(outgoing_transition_weights, dict):
                 for state_ref, weight in outgoing_transition_weights.items():
                     j = self.hs_ref(state_ref)
                     if j == old_n:
                         continue
-                    self.W_hh[old_n][j] = weight
+                    self.W_hh[old_n][j] = float(weight)
 
         # set self-transition
-        self.W_hh[old_n][old_n] = self_transition_weight
+        self.W_hh[old_n][old_n] = float(self_transition_weight)
 
         # everything's changed, clear derived
         self.clear_derived()
@@ -283,20 +302,13 @@ class HMModel:
         if mode == "strict":
             self.validate_hs_against_schema(new_hidden_state)
         elif mode == "force":
-            model_set_names = {es.set_name for es in self.emission_sets}
-            state_set_names = set(new_hidden_state.emission_weights.keys())
-
-            extras = state_set_names - model_set_names
-            if extras:
-                raise Exception(f"hidden state contains unknown emission sets: {extras}")
-            for emission_set in self.emission_sets:
-                if emission_set.set_name not in new_hidden_state.emission_weights:
-                    new_hidden_state.emission_weights[emission_set.set_name] = [0.0] * emission_set.length
+            self.force_fill_hs_emissions(new_hidden_state, missing_fill="zeros")
             self.validate_hs_against_schema(new_hidden_state)
         else:
             raise Exception("mode must be 'strict' or 'force'")
 
         self.hidden_states[idx] = new_hidden_state
+        self.rebuild_lookup_objects()
         self.clear_derived()
 
     def replace_transition_weight(self, prev_state_ref: int | str, current_state_ref: int | str, new_weight: float) -> None:
@@ -305,7 +317,7 @@ class HMModel:
 
         i = self.hs_ref(prev_state_ref)
         j = self.hs_ref(current_state_ref)
-        self.W_hh[i][j] = new_weight
+        self.W_hh[i][j] = float(new_weight)
     
         self.clear_derived()
 
@@ -313,7 +325,7 @@ class HMModel:
         # replace all outgoing transitions from one state
 
         i = self.hs_ref(prev_state_ref)
-        self.W_hh[i] = [w for w in new_row]
+        self.W_hh[i] = [float(w) for w in new_row]
 
         self.clear_derived()
 
@@ -322,7 +334,7 @@ class HMModel:
 
         j = self.hs_ref(current_state_ref)
         for i, weight in enumerate(new_column):
-            self.W_hh[i][j] = weight
+            self.W_hh[i][j] = float(weight)
 
         self.clear_derived()
 
@@ -347,8 +359,6 @@ class HMModel:
                 W_eh[set_name][state_name] = list(hidden_state.emission_weights[set_name])
 
         return W_eh
-
-    #### DERIVATION METHODS #####
 
     def normalize_weights_vector(self, weights: list[float]) -> list[float]:
         # normalize one vector of weights to probabilities
@@ -404,11 +414,10 @@ class HMModel:
         self.P_hh = self.build_P_hh()
         self.P_eh = self.build_P_eh()
 
-    ## WIP: validate everything
     def validate_model(self) -> None:
-        # check basic model consistency
+        # check basic model consistency -
 
-        # W_hh is a square
+        # W_hh is a square 
         if len(self.W_hh) != len(self.hidden_states):
             raise Exception("W_hh must have one row per hidden state")
         for row in self.W_hh:
@@ -417,4 +426,3 @@ class HMModel:
 
         # etc etc
         return
-
