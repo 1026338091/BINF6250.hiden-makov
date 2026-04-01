@@ -4,7 +4,7 @@ This repository contains work done as part of the BINF6250 Algorithmic Foundatio
 
 The repository contains five directories with their own `README.md` files with further descriptions (and assignment reflection)
 
-- `/core`: Shared "final" code for all projects 
+- `/core`: Shared code for all projects 
 - `/project08-viterbi`: Viterbi algorithm returnables.
 - `/project09-forward-backward`: Forward–backward algorithm returnables.
 - `/project10`: (placeholder)
