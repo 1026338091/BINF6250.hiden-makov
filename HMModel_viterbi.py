@@ -1,6 +1,12 @@
 from HMModel_def import HMModel
 import math
 
+# safe log probability helper
+def logp(p: float) -> float:
+    if p <= 0:
+        return float("-inf")
+    return math.log(p)
+
 # viterbi function assuming 1st order markov model
 def viterbi(emissions: list, model: HMModel) -> list[str]:
     
@@ -24,12 +30,6 @@ def viterbi(emissions: list, model: HMModel) -> list[str]:
                 raise Exception("for multiple emission sets, each observation must be a list matching model.emission_sets order")
             if len(obs) != n_sets:
                 raise Exception(f"each observation must have length {n_sets} ")
-
-    # safe log probability helper
-    def logp(p: float) -> float:
-        if p <= 0:
-            return float("-inf")
-        return math.log(p)
 
     #### PREPPING LOOKUP OBJECTS ####
 
