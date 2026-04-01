@@ -8,4 +8,4 @@ The repository contains five directories with their own `README.md` files with f
 - `/project08-viterbi`: Viterbi algorithm deliverables.
 - `/project09-forward-backward`: Forward–backward algorithm deliverables.
 - `/project10`: (placeholder)
-- `/the_rest`: Unorganized alternate versions, tests, WIPs, exploration, etc. The "working copy" for most of the coding demonstrated in `.ipynb` returnables appear here.
+- `/the_rest`: Unorganized alternate versions, tests, WIPs, exploration, etc. The "working copy" for most of the coding demonstrated in `.ipynb`s appear here.
