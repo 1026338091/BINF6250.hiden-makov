@@ -1,12 +1,16 @@
 # BINF6250 Project 9:
 
 ## Description of the project
+This week's project was an implementation of the forward algorithm, backward algorithm, and posterior decoding. The forward algorithm and the backward algorithm both use dynamic programming to determine the probability of a sequence of emissions, given a Hidden Markov model. When their scoring matrices are used in tandem by the third algorithm, posterior decoding, the most probable state for each emission can be identified. 
 
 ## Dependencies
+This week's code relies on our `core/HMModel_def.py` and `core/EmissionSet_and_HiddenState_defs.py` modules, making heavy use of the `HMModel` class and its associated methods to calculate probabilities from weights and to look up the relevant initial, emission, and state-transition probabilities. 
 
 ## Contents
+This week's code is packaged in the corresponding jupyter notebook, `project09-forward-backward/project09.ipynb`. 
 
 ## Usage
+The jupyter notebook containing this week's code is meant to be run from the `project09-forward-backward/` directory and handles importing our modules from the `core/` directory on its own as long as the two directories are under the same, shared parent directory. The algorithms can then be run individually from their associated cells in the Jupyter notebook, with a toy example able to be run across all three algorithms to demonstrate the differences in the forward and backward algorithms' scoring matrices. 
 
 ## Pseudocode
 
@@ -103,7 +107,12 @@ Posterior-decoding:
 ### Successes
 
 ### Strugges
+While we were planning out the backward algorithm, we found our resources quite ambiguous as to whether we needed to account for the initial probabilities once we reached the beginning of the sequence. We ended up reasoning that, since the forward and backward algo's are expected to reach the same probability and the forward algorithm includes the initial probabilities when it initializes its scoring matrix, then the backward algorithm would need to account for the intial probabilities at the end. This is why we chose to add the initial probabilities at the start instead of just adding up the values in the first column of the scoring matrix. Our resources from class were also a little ambiguous about which emission's probability gets calculated for the backwards probability at any given position. Since the emission at position i is accounted for in the forward probability of a given state at position i, we reasoned that it wouldn't make sense to double count it. This led to us looking ahead to all the probabilities of the emission at position i+1 under all the states we could go to from where we are when calculating the backwards probability for the state we're looking at in position i. 
 
 ### Individual reflections
 
+#### Justin:
+This week's project was much more relaxed than last week's, primarily due to last week having demanded us to plan and write our HMM module in addition to implementing Viterbi. The forward algorithm, backward algorithm, and posterior decoding are relatively straightforward, and we were able to inform a lot of how we went about implementing those algorithms using our understanding of the dynamic programming from the Viterbi algorithm. The forward algorithm, especially, took little time for us to plan out, since the only change from Viterbi was adding the probabilities instead of chooding the greatest one. As tempting as it was to copy-paste our pseudocode from project 8 to speed up our planning session, I wanted to write out the pseudocode from scratch this week to avoid any oversights we might give rise to by only spot-checking for changes we needed to make to the Viterbi pseudocode. Our planning session went really well, and we were able to bang out the pseudocode for all three of the algorithms in a couple hours, which was so much faster than the three days we took to write our HMM module last week. We all felt pretty confident in how we wanted to implement the three algorithms this week, and we were able to reason through any ambiguities left open in the lecture. 
+
 ## Appendix
+Generative AI was not used on this project. 
