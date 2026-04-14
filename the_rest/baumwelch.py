@@ -26,21 +26,26 @@ def _resolve_emission_set_name(model: HMModel, which_emission_set: Optional[str]
 # helper to extract parameter arrays, ie. P_init, P_hh, P_eh, ie. pi, A, B 
 def _extract_parameter_arrays(model: HMModel, set_name: str):
     # extract normalized parameters from a HMModel in array form
-
+    # convert our model's weights to probabilities
     model.normalize_all()
 
+    # make a list of hidden state names
     states = [hs.hidden_state_name for hs in model.hidden_states]
 
+    # convert the initial probability dict into an np array
     P_init = np.array(
         [model.P_init[state_name] for state_name in states],
         dtype=float
         ) # ie. pi, shape (N,)
 
+    # convert the state transition dict into a 2d numpy array
     P_hh = np.array(
         [[model.P_hh[prev_state][curr_state] for curr_state in states] for prev_state in states],
         dtype=float
         ) # ie. A, shape (N, N)
 
+    # convert the emission dict into a 2d numpy array 
+    # (also reduce the dimensionality caused by having multiple emission sets in the emissions dict)
     P_eh = np.array(
         [model.P_eh[set_name][state_name] for state_name in states],
         dtype=float
@@ -70,8 +75,10 @@ def _write_probability_arrays_to_model(model: HMModel, set_name: str, P_init: np
 ##### forward / backward in log space #####
 # so we don't have to leave log space every iteration for no reason
 def _forward_log(logp_init: np.ndarray, logp_hh: np.ndarray, emit_logp: np.ndarray):
-    # takes advantage of the fact that emit_logp at each t is fixed for all h
+    # takes advantage of the fact that emit_logp at each t is fixed for all hidden states
+    # T represents the timepoints (uppercase T = the end), N is number of states
     T, N = emit_logp.shape
+    # initialize a scoring matrix for the forward algo
     log_forward_dist = np.full((T, N), -np.inf, dtype=float) 
     log_forward_dist[0] = logp_init + emit_logp[0]
 
