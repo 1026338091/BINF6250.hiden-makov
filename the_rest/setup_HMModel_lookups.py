@@ -1,11 +1,5 @@
 from core.HMModel_def import HMModel
-import math
-
-# safe log probability helper
-def logp(p: float) -> float:
-    if p <= 0:
-        return float("-inf")
-    return math.log(p)
+from mathhelpers import logp
 
 def setup_HMModel_lookups(emissions: list, model: HMModel, log_toggle: bool = True):
 
