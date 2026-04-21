@@ -31,7 +31,7 @@ inputs:
 Helper funcs:
 
 Generate all the states:
-Input: length of alignment
+Input: number of match positions in alignment (this will be inferred from the shape of the 3darrays for emission and/or transition probabilities)
 	Text manipulation, it's just a list of these:
 		m0
 		m{i}
