@@ -1,3 +1,5 @@
+# this works for creating a BaseHMM-inheriting class if you comment out the "emission probs should add to 1" checks in BaseHMM, as well as the part where it turns the list of hidden states into a string (???)
+
 # import statements
 import numpy as np
 from collections import defaultdict
@@ -5,14 +7,7 @@ from assignment_materials.HMM import BaseHMM, HMM
 
 
 class profile_HMM(BaseHMM):
-    """
-    Child of class BaseHMM that is specialized to act as
-    a profile HMM
 
-    Attributes
-    ----------
-    
-    """
     def __init__(self, alignment: list[list[str]],
                  alphabet: list[str],
                  gap: str = "-",
@@ -34,13 +29,17 @@ class profile_HMM(BaseHMM):
         """
 
         # call helper funcs to define emission and trans probs as np arrays
-        trans_probs, emit_probs = self.get_profile_hmm_probs(alignment, alphabet, gap)
+        trans_probs, emit_probs = self.get_profile_hmm_probs(
+            msa_input=alignment, 
+            alphabet=alphabet, 
+            gap=gap
+            )
 
         # this list represents the order that match, insertion, and deletion states are written into the 3d arrays
         self.namelist = ["M", "I", "D"]
 
         # add the gap character to the alphabet so Viterbi and others don't break later
-        alphabet = alphabet + [gap]
+        alphabet_with_gap = alphabet + [gap]
 
         # use the shape of our emission probs array to know how many match positions we have (aka how many 
         # profile positions to have). 
@@ -49,16 +48,24 @@ class profile_HMM(BaseHMM):
         self.hidden_states = self._make_states_list(model_length)
 
         # conver the np arrays to dicts
-        trans_probs = self._trans_probs_to_dict(trans_probs)
-        emit_probs = self._emit_probs_to_dict(emit_probs, alphabet, gap)
+        trans_dict = self._trans_probs_to_dict(trans_probs)
+        emit_dict = self._emit_probs_to_dict(emit_probs, alphabet, gap)
 
         # make a dict for init probs (we're putting M0 on the transition matrix so this is easier)
-        init_probs = defaultdict(float)
+        init_probs = {key:0.0 for key in self.hidden_states}
         init_probs["M0"] = 1.0
 
         # now call the initialization code from the parent class so our other attributes are up and running
-        super().__init__("".join(alphabet), self.hidden_states, init_probs, 
-                 trans_probs, emit_probs, seed=seed, precision=precision, tolerance=tolerance)
+        super().__init__(
+            alphabet=alphabet_with_gap, 
+            hidden_states=self.hidden_states, 
+            init_probs=init_probs, 
+            trans_probs=trans_dict, 
+            emit_probs=emit_dict, 
+            seed=seed, 
+            precision=precision, 
+            tolerance=tolerance
+            )
 
     
     def get_profile_hmm_probs(
@@ -221,10 +228,10 @@ class profile_HMM(BaseHMM):
         matches = [f"M{i}" for i in range(model_length + 1)]
 
         # ditto for D{i} but starting at 1
-        deletions = [f"D{i}" for i in range(1, model_length + 1)]
+        deletions = [f"D{i}" for i in range(model_length + 1)]
 
         # ditto for I{i-1}, again starting at 1
-        insertions = [f"I{i-1}" for i in range(1, model_length + 1)]
+        insertions = [f"I{i}" for i in range(model_length + 1)]
 
         return matches + deletions + insertions
     
@@ -249,7 +256,11 @@ class profile_HMM(BaseHMM):
             the probability P(source -> destination)
         """
         # initialize output
-        trans_dict = {}
+        trans_dict = {
+            source:{destination:0.0 for destination in self.hidden_states} 
+            for source in self.hidden_states}
+        
+        #print("beep",trans_dict["M0"])
 
         # iterate over the profile positions
         for i, array_i in enumerate(trans_probs):
@@ -259,7 +270,7 @@ class profile_HMM(BaseHMM):
                 source_state = self.namelist[j] + str(i)
 
                 # initialize as a defaultdict here so we correctly report 0 probability for illegal transitions (e.g. D4 to M0)
-                trans_dict[source_state] = defaultdict(float)
+                # trans_dict[source_state] = defaultdict(float)
 
                 # now transition probabilities are listed in the current row, in order of M{i+1} at index 0
                 trans_dict[source_state][f"M{i+1}"] = row[0]
@@ -270,6 +281,7 @@ class profile_HMM(BaseHMM):
                 # and D{i+1} is always at index 2
                 trans_dict[source_state][f"D{i+1}"] = row[2]
         
+        #print("boop",trans_dict["M0"])
         return trans_dict
 
     def _emit_probs_to_dict(self, emit_probs: np.ndarray, alphabet: list[str], gap: str = "-") -> dict[str, dict[str, float]]:
@@ -298,7 +310,9 @@ class profile_HMM(BaseHMM):
             dict mapping state to a dict that, itself, maps emission name to P(emission | State)
         """
         # initialize our output
-        emit_dict = {}
+        emit_dict = {
+            state:{emission:0.0 for emission in alphabet} 
+            for state in self.hidden_states}
 
         # get a dict for the background emission probabilities to reuse for our insertion states
         # at any position, i, we can use index 1 for our middle array and it always gives us the same inner array
@@ -328,3 +342,20 @@ class profile_HMM(BaseHMM):
             emit_dict[f"I{i}"] = background_dict
 
         return emit_dict
+
+
+M_STATE, I_STATE, D_STATE, SKIP_STATE = 0, 1, 2, 3
+
+msa_listlist = [
+    list("A-C"),
+    list("TGC"),
+    list("--C"),
+    list("--C")
+    ]
+
+phmm = profile_HMM(alignment=msa_listlist,alphabet=list("ATCG"),gap="-")
+
+print(phmm.alphabet)
+print(phmm.hidden_states)
+print(phmm.trans_probs['M2'])
+print(phmm.emit_probs['M2'])

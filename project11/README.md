@@ -31,7 +31,7 @@ inputs:
 Helper funcs:
 
 Generate all the states:
-Input: length of alignment
+Input: number of match positions in alignment (this will be inferred from the shape of the 3darrays for emission and/or transition probabilities)
 	Text manipulation, it's just a list of these:
 		m0
 		m{i}
@@ -134,9 +134,11 @@ Using a pre-defined HMM module with pretty intuitive datastructures and algorith
 # Struggles
 We found it somewhat difficult to figure out how we should handle the calculations for the emissions and transitions, as the architecture for the profile HMM was a little unintuitive at first. We had to be explicit about how the number in each state's name referred to the number of the accompanying match state, which was also the position in the consensus sequence. We also had to explicitly write out where each state at position i could go to. Once we had an idea of what state transitions were legal, what each position (i) represented, and what each state transition represented, it made it much easier for us to understand how we needed to build the profile HMM. 
 
+While we were able to figure out the aspects of designing the profile HMM that were giving us trouble, we ran into integration issues when we tried passing our profile-HMM objects to the given HMM class so we could use Viterbi and the other algorithms. The issues seem to lay in the assumptions that BaseHMM makes about the data structures it expects our model to have, and it therefore throws errors associated with BaseHMM's validation functions. At a glance, though, it doesn't seem like the assumptions the class makes are violated. For instance, it has been throwing an error stating that all transition probabilities for leaving a state have to add to 1, yet we already made sure of that when we calculated the transition probabilities, as we made sure that the count of all transitions from a given source to a given destination is divided by the sum of the counts for that source going to each of its possible destinations. In other words, the validation functions are throwing errors for things that should already be fine. This has left us successful in creating the profile-HMM class as a child of the BaseHMM class but unsuccessful in actually using it with the functions in the HMM class. Conceptually, we've got the profile HMM down, but we're getting trolled in our implementation by what we can only assume to be inconspicuous indexing or math oversights. 
+
 # Personal Reflections
 ## Group Leader: Linh
-Group leader's reflection on the project
+We should have looked at the BaseHMM/HMM assumptions earlier. We focused a lot on defining the Profile HMM and specifically learning about Plan 7. This was a good way to notice how a Profile HMM is just a special case of a HMM, with a lot of 0 probabilities. We tried to use defaultdict, but ran into some hard assumptions of BaseHMM because of that, so we ended up assigning 0 probabilities with dict comprehension in the end. We ended up being able to create the ProfileHMM child class while only silencing 2 validation blocks in the source code (emission probabilities being required to add up to 1; Plan 7 style models have definitionally silent states), but didn't have enough time to figure out how to make something HMM() accepts in place of BaseHMM (we probably just need to get a clearer picture of how inheritance works in this case).
 
 ## Danny
 We hit a major roadblock trying to pass our ProfileHMM parameters into the BaseHMM class. We noticed that BaseHMM's @hidden_states.setter forcefully concatenates state lists into a single string, which completely breaks our model since our state names are multi-character strings (like 'M1', 'I2').
