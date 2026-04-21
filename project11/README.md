@@ -138,7 +138,7 @@ While we were able to figure out the aspects of designing the profile HMM that w
 
 # Personal Reflections
 ## Group Leader: Linh
-Group leader's reflection on the project
+We should have looked at the BaseHMM/HMM assumptions earlier. We focused a lot on defining the Profile HMM and specifically learning about Plan 7. This was a good way to notice how a Profile HMM is just a special case of a HMM, with a lot of 0 probabilities. We tried to use defaultdict, but ran into some hard assumptions of BaseHMM because of that, so we ended up assigning 0 probabilities with dict comprehension in the end. We ended up being able to create the ProfileHMM child class while only silencing 2 validation blocks in the source code (emission probabilities being required to add up to 1; Plan 7 style models have definitionally silent states), but didn't have enough time to figure out how to make something HMM() accepts in place of BaseHMM (we probably just need to get a clearer picture of how inheritance works in this case).
 
 ## Danny
 Other members' reflections on the project
