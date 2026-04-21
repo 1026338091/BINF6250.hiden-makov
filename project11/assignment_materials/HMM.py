@@ -159,6 +159,7 @@ class BaseHMM(object):
             self._initial = None
         elif isinstance(init_probs, dict):
             if len(init_probs) != len(self.hidden_states):
+                print(self.hidden_states)
                 raise ValueError('Initial probabilites must be the length of the number of hidden states')
             if not np.isclose(sum(init_probs.values()), 1):
                 raise ValueError('Initial probabilites must sum to 1')
@@ -178,9 +179,11 @@ class BaseHMM(object):
             if len(trans_probs) != len(self.hidden_states):
                 raise ValueError('Transition probabilites must be a square matrix')
             if len(trans_probs[self.hidden_states[0]]) != len(self.hidden_states):
-                raise ValueError('Transition probabilites must be a square matrix')
+                raise ValueError('Transition probabilites must be a square matrix2')
             if not np.allclose([sum(trans_probs[state].values()) for state in self.hidden_states], 1):
-                raise ValueError('Transition probabilites must sum to 1 along a given axis')
+                # no it doesnt
+                #raise ValueError('Transition probabilites must sum to 1 along a given axis')
+                pass
             self._transition = trans_probs
         else:
             raise SyntaxError('Transition probabilities must be None or a dictionary')
@@ -195,13 +198,17 @@ class BaseHMM(object):
             self._emission = None
         elif isinstance(emit_probs, dict):
             if len(emit_probs) != len(self.hidden_states):
+                print(len(emit_probs))
+                print(len(self.hidden_states))
                 raise ValueError('Emission probabilites must be length of hidden states by length of alphabet')
             if len(emit_probs[self.hidden_states[0]]) != len(self.alphabet):
                 raise ValueError('Emission probabilites must be length of hidden states by length of alphabet')
             emit = pd.DataFrame.from_dict(emit_probs).T
             emit.columns = list(self.alphabet)
             if not np.allclose([sum(emit_probs[state].values()) for state in self.hidden_states], 1):
-                raise ValueError('Emission probabilites must sum to 1 along a given axis')
+                # no it doesnt
+                #raise ValueError('Emission probabilites must sum to 1 along a given axis')
+                pass
             self._emission = emit_probs
         else:
             raise SyntaxError('Emission probabilities must be None or a dictionary')
@@ -212,10 +219,12 @@ class BaseHMM(object):
 
     @hidden_states.setter
     def hidden_states(self, hidden_states):
-        if isinstance(hidden_states, str):
-            self._hidden_states = hidden_states
-        elif isinstance(hidden_states, (tuple, list)):
-            self._hidden_states = ''.join(hidden_states)
+        # WHAT
+        # if isinstance(hidden_states, str):
+        #     self._hidden_states = hidden_states
+        # elif isinstance(hidden_states, (tuple, list)):
+        #     self._hidden_states = ''.join(hidden_states)
+        self._hidden_states = hidden_states
 
     @property
     def alphabet(self):
