@@ -31,7 +31,7 @@ inputs:
 Helper funcs:
 
 Generate all the states:
-Input: length of alignment
+Input: number of match positions in alignment (this will be inferred from the shape of the 3darrays for emission and/or transition probabilities)
 	Text manipulation, it's just a list of these:
 		m0
 		m{i}
@@ -133,6 +133,8 @@ Using a pre-defined HMM module with pretty intuitive datastructures and algorith
 
 # Struggles
 We found it somewhat difficult to figure out how we should handle the calculations for the emissions and transitions, as the architecture for the profile HMM was a little unintuitive at first. We had to be explicit about how the number in each state's name referred to the number of the accompanying match state, which was also the position in the consensus sequence. We also had to explicitly write out where each state at position i could go to. Once we had an idea of what state transitions were legal, what each position (i) represented, and what each state transition represented, it made it much easier for us to understand how we needed to build the profile HMM. 
+
+While we were able to figure out the aspects of designing the profile HMM that were giving us trouble, we ran into integration issues when we tried passing our profile-HMM objects to the given HMM class so we could use Viterbi and the other algorithms. The issues seem to lay in the assumptions that BaseHMM makes about the data structures it expects our model to have, and it therefore throws errors associated with BaseHMM's validation functions. At a glance, though, it doesn't seem like the assumptions the class makes are violated. For instance, it has been throwing an error stating that all transition probabilities for leaving a state have to add to 1, yet we already made sure of that when we calculated the transition probabilities, as we made sure that the count of all transitions from a given source to a given destination is divided by the sum of the counts for that source going to each of its possible destinations. In other words, the validation functions are throwing errors for things that should already be fine. This has left us successful in creating the profile-HMM class as a child of the BaseHMM class but unsuccessful in actually using it with the functions in the HMM class. Conceptually, we've got the profile HMM down, but we're getting trolled in our implementation by what we can only assume to be inconspicuous indexing or math oversights. 
 
 # Personal Reflections
 ## Group Leader: Linh
