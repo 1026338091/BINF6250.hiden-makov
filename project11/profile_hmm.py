@@ -71,7 +71,7 @@ class profile_HMM(BaseHMM):
             pseudocount = 1,
             gap = "-"
         ):
-        # placeholder so the namespace exists
+        # placeholder so the namespace exists, will replace with equivalent function from Linh's copy of the notebook once he's done editing it
         # pretend this returns trans_probs, emit_probs
         pass
 
